@@ -1,0 +1,24 @@
+School Parent Bot - package contents
+
+workflows/
+  school-parent-bot.json                 Clean n8n parent chatbot export
+  notice-broadcast.json                 Clean n8n notice broadcast export
+
+database/
+  schema.sql                             Reference Supabase schema (review before use)
+
+docs/
+  SETUP_GUIDE.md                         Import and configuration guide
+  TEST_CHECKLIST.md                      Manual test checklist
+  SECURITY_AND_LIMITATIONS.md            Secret handling and known limitations
+  PROJECT_STATUS.md                      Project status snapshot
+
+screenshots/
+  school-parent-bot-workflow.png         Main workflow screenshot
+  notice-broadcast-workflow.png          Notice broadcast workflow screenshot
+  whatsapp-notice-and-chat.png           WhatsApp notice and chatbot conversation
+  whatsapp-chat-details.png              Chatbot reply with fees, timetable and notices
+
+.env.example                             Placeholder configuration reference
+.gitignore                               Excludes local secrets and temporary files
+README.md                                Project overview and documentation

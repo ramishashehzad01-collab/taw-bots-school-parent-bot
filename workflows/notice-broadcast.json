@@ -1,0 +1,149 @@
+{
+  "name": "School Parent Bot – Notice Broadcast",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-480, -80],
+      "id": "1b85b034-c676-49f0-b5cd-e475f8fedffd",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "notices",
+        "limit": 1,
+        "orderBy": "publish_date.desc",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "is_active",
+              "condition": "eq",
+              "keyValue": "true"
+            },
+            {
+              "keyName": "is_broadcasted",
+              "condition": "eq",
+              "keyValue": "false"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [-256, -80],
+      "id": "0802b1da-a1c0-45c2-b4db-7c08739078d8",
+      "name": "notices"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "parents",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [-32, -80],
+      "id": "9d2b7111-eaae-4d3c-833b-ccf6ca5ef16f",
+      "name": "parents"
+    },
+    {
+      "parameters": {
+        "jsCode": "const notice = $('notices').first().json;\nconst parents = $('parents').all();\n\nconst publishDate = notice.publish_date\n  ? new Intl.DateTimeFormat('en-GB', {\n      day: 'numeric',\n      month: 'long',\n      year: 'numeric',\n      timeZone: 'Asia/Karachi'\n    }).format(new Date(notice.publish_date))\n  : 'Not specified';\n\nreturn parents\n  .filter(item => item.json.phone)\n  .map(item => ({\n    json: {\n      notice_id: notice.id,\n      phone: item.json.phone.replace(/^\\+/, ''),\n      title: notice.title,\n      details: notice.message,\n      publish_date: publishDate\n    }\n  }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [192, -80],
+      "id": "6a2ba60f-a243-42de-b421-75909a068497",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v27.0/YOUR_WHATSAPP_PHONE_NUMBER_ID/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WHATSAPP_ACCESS_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.phone }}\",\n  \"type\": \"template\",\n  \"template\": {\n    \"name\": \"school_notice_broadcast\",\n    \"language\": {\n      \"code\": \"en_US\"\n    },\n    \"components\": [\n      {\n        \"type\": \"body\",\n        \"parameters\": [\n          {\n            \"type\": \"text\",\n            \"text\": \"{{ $json.title }}\"\n          },\n          {\n            \"type\": \"text\",\n            \"text\": \"{{ $json.details }}\"\n          },\n          {\n            \"type\": \"text\",\n            \"text\": \"{{ $json.publish_date }}\"\n          }\n        ]\n      }\n    ]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [416, -80],
+      "id": "b8fa79e9-579f-4b2f-ba1b-7ab805135290",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "notices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "notices": {
+      "main": [
+        [
+          {
+            "node": "parents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parents": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "tags": []
+}

@@ -1,0 +1,713 @@
+{
+  "name": "School Parent Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST",
+          "GET"
+        ],
+        "path": "school-parent-bot-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        -2320,
+        -336
+      ],
+      "id": "b97bcf17-2d9a-4162-a61a-502662abcc52",
+      "name": "Webhook",
+      "webhookId": "school-parent-bot-webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -2096,
+        -192
+      ],
+      "id": "5700ad9f-8e9c-4cf3-b040-2bd88d042f3b",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "852563c6-836e-453b-b7c8-be45f2716da6",
+              "name": "sender",
+              "value": "={{ '+' + $json.body.entry[0].changes[0].value.messages[0].from.replace(/^\\+/, '') }}",
+              "type": "string"
+            },
+            {
+              "id": "d3a57a5c-ff45-457f-b17d-ffc4378dc95d",
+              "name": "message",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "6a129dbe-dea0-430c-8db2-65870cf91508",
+              "name": "recipient",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].from.replace(/^\\+/, '') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1648,
+        -352
+      ],
+      "id": "f78b3da7-4b9d-467a-8a2a-299f48afbb0e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "9ed814e6-874e-4f68-ac26-6b5aa4c07edd",
+              "leftValue": "={{ !!$json.parent_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        -1248,
+        -352
+      ],
+      "id": "faf5fa9b-6ca7-4445-9c07-2d69fca2f28c",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "72d1a946-05b0-42b5-8980-6f6e2f4dc480",
+              "name": "parent_id",
+              "value": "={{ $json.parent_id }}",
+              "type": "string"
+            },
+            {
+              "id": "9e0610a1-68f9-42ac-a16c-5bfa05a2f226",
+              "name": "parent_name",
+              "value": "={{ $json.full_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1024,
+        -448
+      ],
+      "id": "7daf285b-0866-4e65-87b1-e10b1147ca6a",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'Current date and day in Pakistan: ' + $now.setZone('Asia/Karachi').toFormat('EEEE, dd LLLL yyyy') + '\\nParent message: ' + $('Edit Fields').first().json.message + '\\n\\nVerified school database records: ' + JSON.stringify($json.school_data) }}",
+        "options": {
+          "systemMessage": "=You are a helpful School Parent Assistant.\n\nYour job is to answer parents' questions about:\n- Student information\n- Fee details and payment status\n- Class timetables\n- School notices\n\nPARENT INFORMATION:\nUse the parent details retrieved from the workflow.\n\nSCHOOL DATABASE:\nThe workflow provides combined Supabase data through the Code node in the school_data field. It includes records from:\n1. parent-students\n2. students\n3. fees\n4. timetables\n5. notices\n\nIMPORTANT RULES:\n1. Only provide information about students linked to the verified parent.\n2. Never share another parent's or student's private information.\n3. Use only the Supabase data provided by the workflow.\n4. Never invent student details, fees, payment status, dates or timetable information.\n5. If information is missing, politely say it is not available.\n6. For fee questions, provide the actual fee amount and payment status from the database.\n7. For timetable questions, provide the correct class schedule.\n8. For notices, show only active school notices.\n9. If the parent asks about multiple children, provide information separately for each child.\n10. Reply in simple, polite English.\n11. Keep answers clear and concise.\n\nIf the parent's question is unclear, ask them politely for clarification.\n\nAlways protect student and parent privacy.                                                                                  If the parent asks for \"today's timetable\" or says \"today\", use the current day provided in the user message. Do not ask which day they mean. Match the student's class_name and section with the timetable records, then show the schedule for that day.STRICT DATA ACCURACY RULES:\n\n1. Only provide information explicitly present in the supplied Supabase records.\n2. Never invent, assume, predict, or generate missing school information.\n3. For timetable requests, match the exact class_name, section, and day_of_week.\n4. If no records exist for the requested day, clearly say:\n\"Sorry, the timetable for this day is not available in our school database.\"\n5. Never copy another day's timetable and present it as the requested day's timetable.\n6. If a requested field is missing, say it is not available.\n7. Do not create fictional subjects, teachers, timings, or room numbers. PRIVACY RULE:\nYou may only provide information about the student linked to the verified parent's phone number.\nNever share information about another student, even if their student ID exists in the database.\nIf a parent asks about another student, politely refuse and explain that you can only provide information about their own linked child. Never confirm or deny whether another student's record exists in the database. Only say that you can share information about students linked to the verified parent's account."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        256,
+        -320
+      ],
+      "id": "cf47d444-8866-4a42-9c46-e5443e5cc24c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        128,
+        -96
+      ],
+      "id": "47034749-78f6-4d73-881d-5a532d73ecab",
+      "name": "Groq Chat Model"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "parents",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "condition": "eq",
+              "keyValue": "={{ $json.sender }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1472,
+        -352
+      ],
+      "id": "6b794186-ea52-4b16-9558-e29b10439822",
+      "name": "parents",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "parent_students",
+        "limit": 10,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "parent_id",
+              "condition": "eq",
+              "keyValue": "={{ $('parents').first().json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        -640
+      ],
+      "id": "416d1046-503e-42df-a5df-3838bedce592",
+      "name": "parent-students",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "students",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('parent-students').first().json.student_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        -464
+      ],
+      "id": "dc146b33-f657-47fa-88f5-ee70b72d8942",
+      "name": "students",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "fees",
+        "limit": 10,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "student_id",
+              "condition": "eq",
+              "keyValue": "={{ $('parent-students').first().json.student_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        -272
+      ],
+      "id": "c6462680-dbb8-4de7-8a3e-1eb0ffcc255a",
+      "name": "fees",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "notices",
+        "limit": 20,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "is_active",
+              "condition": "eq",
+              "keyValue": "=true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        128
+      ],
+      "id": "6806acf7-c349-422a-9f16-e047e74e9223",
+      "name": "notices",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "timetables",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "class_name",
+              "condition": "eq",
+              "keyValue": "={{ $('students').first().json.class_name }}"
+            },
+            {
+              "keyName": "section",
+              "condition": "eq",
+              "keyValue": "={{ $('students').first().json.section }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        -80
+      ],
+      "id": "b9631283-9639-42ec-9689-04cf846fdcdd",
+      "name": "timetables",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v27.0/YOUR_WHATSAPP_PHONE_NUMBER_ID/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WHATSAPP_ACCESS_TOKEN"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"recipient_type\": \"individual\",\n  \"to\": \"{{ $('Edit Fields').first().json.recipient }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": {{ JSON.stringify($json.output) }}\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        544,
+        -320
+      ],
+      "id": "f66f416f-ff28-48ef-bcf5-6b3612663d74",
+      "name": "whatsapp reply"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v27.0/YOUR_WHATSAPP_PHONE_NUMBER_ID/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WHATSAPP_ACCESS_TOKEN"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"recipient_type\": \"individual\",\n  \"to\": \"{{ $('Edit Fields').first().json.recipient }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"Sorry, your WhatsApp number is not registered with our school. Please contact the school administration to register your number.\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1008,
+        -224
+      ],
+      "id": "19798347-726d-4807-96c2-4a10ade8beef",
+      "name": "Unregistered Parent Reply"
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -144,
+        -336
+      ],
+      "id": "9de70050-97f5-4f90-9218-f5416e141055",
+      "name": "combine school data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allData = $input.all().map(item => item.json);\n\nreturn [\n  {\n    json: {\n      school_data: allData\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        -320
+      ],
+      "id": "bba034c0-b446-47bf-b22f-f00f7c0368a4",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "EVENT_RECEIVED",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -2080,
+        -416
+      ],
+      "id": "c2561979-2f46-4288-b33a-6c4a43e37c65",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "5270bd2e-c51b-48fc-99f8-013c65764621",
+              "leftValue": "={{ !!$json.body.entry[0].changes[0].value.messages?.[0]?.from }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        -1888,
+        -336
+      ],
+      "id": "f331ed61-bc23-429b-8faf-1ecf0f5f161a",
+      "name": "If2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "parents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unregistered Parent Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "parent-students",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "students",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "fees",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "timetables",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "notices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parents": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "combine school data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parent-students": {
+      "main": [
+        [
+          {
+            "node": "combine school data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "students": {
+      "main": [
+        [
+          {
+            "node": "combine school data",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "fees": {
+      "main": [
+        [
+          {
+            "node": "combine school data",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "notices": {
+      "main": [
+        [
+          {
+            "node": "combine school data",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "timetables": {
+      "main": [
+        [
+          {
+            "node": "combine school data",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "whatsapp reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "combine school data": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook1": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "nodeGroups": [],
+  "tags": []
+}
